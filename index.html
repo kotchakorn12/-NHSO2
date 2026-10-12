@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerShell & Fixed-Length File Generator (NHSO)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom scrollbar for preview */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-50 text-slate-800 antialiased flex flex-col">
+
+    <!-- Header Navigation Bar -->
+    <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/10 p-2 rounded-xl">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">NHSO Fixed-Length Generator & Configurator</h1>
+                    <p class="text-indigo-200 text-xs mt-0.5">เครื่องมือปรับแต่งตัวแปรสคริปต์ PowerShell และสร้างไฟล์ Fixed-Length สำหรับ สปสช.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5">
+                <button onclick="generateScriptFile()" class="bg-white text-indigo-700 hover:bg-indigo-50 font-semibold px-4 py-2 rounded-xl shadow-sm transition duration-150 flex items-center gap-2 text-xs sm:text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    ดาวน์โหลด .ps1
+                </button>
+                <button onclick="generateTextFileDirectly()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-xl shadow-sm transition duration-150 flex items-center gap-2 text-xs sm:text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Gen & โหลดไฟล์ .txt
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6">
+        
+        <!-- Left Column: Form Controls (Editable Fields) -->
+        <div class="flex-1 space-y-6 overflow-y-auto pr-0 lg:pr-1">
+            
+            <!-- General Configuration Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span class="w-2 h-5 bg-indigo-600 rounded-full"></span>
+                    ตั้งค่าทั่วไป (General Settings)
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Total Records ($totalRecords)</label>
+                        <input type="number" id="totalRecords" value="10000" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Progress Chunk ($i % X)</label>
+                        <input type="number" id="chunkSize" value="5000" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Date ($Date1)</label>
+                        <input type="text" id="Date1" value="14102026" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header Fields (Line 1) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span class="w-2 h-5 bg-indigo-600 rounded-full"></span>
+                    บรรทัดที่ 1 (Header Fields)
+                </h2>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line1_id</label>
+                            <input type="text" id="line1_id" value="0000001" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line1_code (รหัสหน่วยงาน)</label>
+                            <input type="text" id="line1_code" value="020019014489" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line1_branch (ชื่อสาขา/หน่วยงาน)</label>
+                        <input type="text" id="line1_branch" value="สนง.หลักประกันสุขภาพแห่งชาติ  สำนักงานหลักประกันสุขภาพแห่งชาติ" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line1_app1 (ผู้อนุมัติ 1)</label>
+                            <input type="text" id="line1_app1" value="natthaporn.l@nhso.go.thx" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line1_app2 (ผู้อนุมัติ 2)</label>
+                            <input type="text" id="line1_app2" value="natenapha.s@nhso.go.thx" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail Fields (Line 2) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span class="w-2 h-5 bg-indigo-600 rounded-full"></span>
+                    บรรทัดที่ 2 (Detail Fields)
+                </h2>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line2_type</label>
+                            <input type="text" id="line2_type" value="1" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line2_code1</label>
+                            <input type="text" id="line2_code1" value="01102362361002716" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line2_ref</label>
+                        <input type="text" id="line2_ref" value="C000000000000100C000000000000000000000000000000000000" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line2_desc1</label>
+                            <input type="text" id="line2_desc1" value="??บริษัท โรงแรมเซ็นทรัลพลาซา                        120 หมู่ 3 ศูนย์ราชการเฉลิมพระ กรุงเทพมหานคร" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line2_desc2</label>
+                            <input type="text" id="line2_desc2" value="CENTRAL PLAZA HOTEL                               120 GOVERNMENT CENTER LAKSI BANGKOK" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line2_desc3</label>
+                            <input type="text" id="line2_desc3" value="0000210771AM003" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line2_desc5 (เบอร์โทร)</label>
+                            <input type="text" id="line2_desc5" value="0613983962" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line2_desc4</label>
+                        <input type="text" id="line2_desc4" value="0000210771บริษัท โรงแรมเซ็นทรัลพลาซา         120 หมู่ 3 ศูนย์ราชการเฉลิมพระเกียรกรุงเทพมหานคร                      10210     3000000136" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line2_desc6</label>
+                        <input type="text" id="line2_desc6" value="000000000001402000000000147196??00000000000000100030000" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Fields (Line 3) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span class="w-2 h-5 bg-indigo-600 rounded-full"></span>
+                    บรรทัดที่ 3 (Summary Fields)
+                </h2>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line3_type</label>
+                            <input type="text" id="line3_type" value="9" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line3_code1</label>
+                            <input type="text" id="line3_code1" value="100030000" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line3_desc1</label>
+                        <input type="text" id="line3_desc1" value="021000000000000100R000000000009813000000000150000" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line3_desc2</label>
+                        <input type="text" id="line3_desc2" value="สำนักงานหลักประกันสุขภาพแห่งชาติ(สปสช)       0994000041098บริษัท โรงแรมเซ็นทรัลพลาซาจำกัด (มหาชน)      0107536001389" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">$line3_desc3</label>
+                        <input type="text" id="line3_desc3" value="Z3021%  ภงด.53 ค่าจ้างบริการ" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Live PowerShell Script Preview -->
+        <div class="w-full lg:w-[480px] flex flex-col gap-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-[700px] sticky top-24">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-emerald-500 rounded-full"></span>
+                        PowerShell Script Live Preview
+                    </h2>
+                    <button onclick="copyScript()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded-lg transition duration-150 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                        คัดลอกสคริปต์
+                    </button>
+                </div>
+                <div class="flex-1 relative">
+                    <textarea id="scriptOutput" readonly class="w-full h-full bg-slate-950 text-emerald-400 font-mono text-xs p-4 rounded-xl resize-none focus:outline-none shadow-inner leading-relaxed"></textarea>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-100 flex gap-3">
+                    <button onclick="generateScriptFile()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-sm transition duration-150 text-xs sm:text-sm text-center">
+                        ดาวน์โหลด .ps1
+                    </button>
+                    <button onclick="generateTextFileDirectly()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-sm transition duration-150 text-xs sm:text-sm text-center">
+                        Gen .txt ทันที
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2">
+        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="toastMessage">คัดลอกไปยังคลิปบอร์ดเรียบร้อยแล้ว</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function getValues() {
+            return {
+                totalRecords: document.getElementById('totalRecords').value,
+                chunkSize: document.getElementById('chunkSize').value,
+                Date1: document.getElementById('Date1').value,
+                
+                line1_id: document.getElementById('line1_id').value,
+                line1_branch: document.getElementById('line1_branch').value,
+                line1_code: document.getElementById('line1_code').value,
+                line1_app1: document.getElementById('line1_app1').value,
+                line1_app2: document.getElementById('line1_app2').value,
+
+                line2_type: document.getElementById('line2_type').value,
+                line2_code1: document.getElementById('line2_code1').value,
+                line2_ref: document.getElementById('line2_ref').value,
+                line2_desc1: document.getElementById('line2_desc1').value,
+                line2_desc2: document.getElementById('line2_desc2').value,
+                line2_desc3: document.getElementById('line2_desc3').value,
+                line2_desc4: document.getElementById('line2_desc4').value,
+                line2_desc5: document.getElementById('line2_desc5').value,
+                line2_desc6: document.getElementById('line2_desc6').value,
+
+                line3_type: document.getElementById('line3_type').value,
+                line3_code1: document.getElementById('line3_code1').value,
+                line3_desc1: document.getElementById('line3_desc1').value,
+                line3_desc2: document.getElementById('line3_desc2').value,
+                line3_desc3: document.getElementById('line3_desc3').value
+            };
+        }
+
+        function buildPowerShellScript(v) {
+            return `# ==========================================
+# PowerShell Fixed-Length Generator Script
+# Generated from Web Configurator
+# ==========================================
+
+$outputPath = ".\\output_fixed_${v.totalRecords}.txt"
+
+if (Test-Path $outputPath) {
+    Remove-Item $outputPath
+}
+
+$totalRecords = ${v.totalRecords}
+$allLines = [System.Collections.Generic.List[string]]::new()
+
+$Date1 = "${v.Date1}"
+
+# 1. บรรทัดที่ 1 (Header)
+$line1_id     = "${v.line1_id}"
+$line1_branch = "${v.line1_branch}".PadRight(70, ' ')
+$line1_code   = "${v.line1_code}".PadRight(16, ' ')
+$line1_date   = "$Date1".PadRight(179, ' ')
+$line1_type   = "มตฐ".PadRight(148, ' ')
+$line1_app1   = "${v.line1_app1}".PadRight(120, ' ')
+$line1_app2   = "${v.line1_app2}".PadRight(120, ' ')
+$allLines.Add("$line1_id$line1_branch$line1_code$line1_date$line1_type$line1_app1$line1_app2")
+
+for ($i = 1; $i -le $totalRecords; $i++) {
+    $num1  = (($i - 1) * 2) + 2
+    $num2  = $num1 + 1
+    $seqStr5  = $i.ToString("D5")
+    
+    $seqStr1 = $num1.ToString("D6")
+    $seqStr2 = $num2.ToString("D6")
+
+    # 2. บรรทัดที่ 2 (Detail)
+    $line2_type   = "${v.line2_type}"
+    $line2_id     = $seqStr1
+    $line2_date   = $Date1
+    $line2_code1  = "${v.line2_code1}".PadRight(23, ' ')
+    $line2_ref    = "${v.line2_ref}"
+    $line2_desc1  = "${v.line2_desc1}".PadRight(112, ' ')
+    $line2_desc2  = "${v.line2_desc2}".PadRight(110, ' ')
+    $line2_desc3  = "${v.line2_desc3}".PadRight(107, ' ')
+    $line2_desc4  = "${v.line2_desc4}".PadRight(225, ' ')
+    $line2_desc5  = "${v.line2_desc5}".PadRight(30, ' ')
+    $line2_desc6  = "${v.line2_desc6}"
+    $line2_date2  = "$seqStr5" + "2026"
+    $line2_desc7  = "".PadRight(41, ' ')
+    $allLines.Add("$line2_type$line2_id$line2_date$line2_code1$line2_ref$line2_desc1$line2_desc2$line2_desc3$line2_desc4$line2_desc5$line2_desc6$line2_date2$line2_desc7")
+
+    # 3. บรรทัดที่ 3 (Summary)
+    $line3_type   = "${v.line3_type}"
+    $line3_id     = $seqStr2
+    $line3_date   = $Date1
+    $line3_code1  = "${v.line3_code1}"
+    $line3_date2  = "$line2_date2".PadRight(12, ' ')
+    $line3_desc1  = "${v.line3_desc1}"
+    $line3_desc2  = "${v.line3_desc2}".PadRight(166, ' ')
+    $line3_desc3  = "${v.line3_desc3}".PadRight(169, ' ')
+    $allLines.Add("$line3_type$line3_id$line3_date$line3_code1$line3_date2$line3_desc1$line3_desc2$line3_desc3")
+
+    if ($i % ${v.chunkSize} -eq 0) {
+        Write-Host "Processed: $i / $totalRecords records..."
+    }
+}
+
+# บันทึกข้อมูลด้วย UTF8 หรือ Windows-874
+$allLines | Out-File -FilePath $outputPath -Encoding utf8
+Write-Host "Successfully generated fixed-length file at: $outputPath" -ForegroundColor Green`;
+        }
+
+        function updatePreview() {
+            const v = getValues();
+            document.getElementById('scriptOutput').value = buildPowerShellScript(v);
+        }
+
+        // Attach listeners to all inputs for real-time live preview
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', updatePreview);
+        });
+
+        function generateScriptFile() {
+            const v = getValues();
+            const content = buildPowerShellScript(v);
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Generate-FixedFile_${v.totalRecords}.ps1`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("ดาวน์โหลดไฟล์ .ps1 สำเร็จแล้ว");
+        }
+
+        function generateTextFileDirectly() {
+            const v = getValues();
+            const total = parseInt(v.totalRecords) || 1000;
+            const lines = [];
+
+            const padRight = (str, len) => (str + '').padEnd(len, ' ');
+
+            // Line 1
+            const l1_id = v.line1_id;
+            const l1_branch = padRight(v.line1_branch, 70);
+            const l1_code = padRight(v.line1_code, 16);
+            const l1_date = padRight(v.Date1, 179);
+            const l1_type = padRight("มตฐ", 148);
+            const l1_app1 = padRight(v.line1_app1, 120);
+            const l1_app2 = padRight(v.line1_app2, 120);
+            lines.push(`${l1_id}${l1_branch}${l1_code}${l1_date}${l1_type}${l1_app1}${l1_app2}`);
+
+            for (let i = 1; i <= total; i++) {
+                const num1 = ((i - 1) * 2) + 2;
+                const num2 = num1 + 1;
+                const seqStr5 = String(i).padStart(5, '0');
+                const seqStr1 = String(num1).padStart(6, '0');
+                const seqStr2 = String(num2).padStart(6, '0');
+
+                // Line 2
+                const l2_type = v.line2_type;
+                const l2_id = seqStr1;
+                const l2_date = v.Date1;
+                const l2_code1 = padRight(v.line2_code1, 23);
+                const l2_ref = v.line2_ref;
+                const l2_desc1 = padRight(v.line2_desc1, 112);
+                const l2_desc2 = padRight(v.line2_desc2, 110);
+                const l2_desc3 = padRight(v.line2_desc3, 107);
+                const l2_desc4 = padRight(v.line2_desc4, 225);
+                const l2_desc5 = padRight(v.line2_desc5, 30);
+                const l2_desc6 = v.line2_desc6;
+                const l2_date2 = seqStr5 + "2026";
+                const l2_desc7 = "".padEnd(41, ' ');
+                lines.push(`${l2_type}${l2_id}${l2_date}${l2_code1}${l2_ref}${l2_desc1}${l2_desc2}${l2_desc3}${l2_desc4}${l2_desc5}${l2_desc6}${l2_date2}${l2_desc7}`);
+
+                // Line 3
+                const l3_type = v.line3_type;
+                const l3_id = seqStr2;
+                const l3_date = v.Date1;
+                const l3_code1 = v.line3_code1;
+                const l3_date2 = padRight(l2_date2, 12);
+                const l3_desc1 = v.line3_desc1;
+                const l3_desc2 = padRight(v.line3_desc2, 166);
+                const l3_desc3 = padRight(v.line3_desc3, 169);
+                lines.push(`${l3_type}${l3_id}${l3_date}${l3_code1}${l3_date2}${l3_desc1}${l3_desc2}${l3_desc3}`);
+            }
+
+            const textContent = lines.join('\r\n');
+            const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `output_fixed_${total}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("สร้างและดาวน์โหลดไฟล์ .txt สำเร็จแล้ว");
+        }
+
+        function copyScript() {
+            const textarea = document.getElementById('scriptOutput');
+            textarea.select();
+            document.execCommand('copy');
+            showToast("คัดลอกโค้ดสคริปต์ไปยังคลิปบอร์ดแล้ว");
+        }
+
+        // Initial render call
+        updatePreview();
+    </script>
+</body>
+</html>
